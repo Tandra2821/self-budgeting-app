@@ -1,116 +1,64 @@
-import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  Button,
-  StyleSheet,
-  Alert,
-  Text,
-  TouchableOpacity,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, Button, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AddExpenseScreen({ route, navigation }) {
-  const editingExpense = route.params?.expense;
+  const existingExpense = route.params?.expense;
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
 
-  const [title, setTitle] = useState(editingExpense ? editingExpense.title : '');
-  const [amount, setAmount] = useState(
-    editingExpense ? editingExpense.amount.toString() : ''
-  );
-  const [type, setType] = useState(editingExpense ? editingExpense.type : 'Cash');
+  useEffect(() => {
+    if (existingExpense) {
+      setTitle(existingExpense.title);
+      setAmount(String(existingExpense.amount));
+      setPaymentMethod(existingExpense.paymentMethod);
+    }
+  }, [existingExpense]);
 
-  const handleAddOrUpdateExpense = async () => {
+  const saveExpense = async () => {
     if (!title || !amount) {
-      Alert.alert('Error', 'Please enter both title and amount');
+      Alert.alert("Error", "Please enter all fields");
       return;
     }
 
-    try {
-      const storedExpenses = await AsyncStorage.getItem('expenses');
-      let expenses = storedExpenses ? JSON.parse(storedExpenses) : [];
+    const newExpense = {
+      id: existingExpense ? existingExpense.id : Date.now().toString(),
+      title,
+      amount: parseFloat(amount),
+      paymentMethod,
+    };
 
-      if (editingExpense) {
-        // update existing expense
-        expenses = expenses.map((exp) =>
-          exp.id === editingExpense.id
-            ? { ...exp, title, amount: parseFloat(amount), type }
-            : exp
-        );
+    try {
+      const stored = await AsyncStorage.getItem("expenses");
+      const data = stored ? JSON.parse(stored) : [];
+
+      let updated;
+      if (existingExpense) {
+        updated = data.map((e) => (e.id === existingExpense.id ? newExpense : e));
       } else {
-        // add new expense
-        const newExpense = {
-          id: Date.now().toString(),
-          title,
-          amount: parseFloat(amount),
-          type,
-        };
-        expenses.push(newExpense);
+        updated = [...data, newExpense];
       }
 
-      await AsyncStorage.setItem('expenses', JSON.stringify(expenses));
-      Alert.alert('Success', editingExpense ? 'Expense updated!' : 'Expense added!');
-      navigation.navigate('Home');
+      await AsyncStorage.setItem("expenses", JSON.stringify(updated));
+      navigation.navigate("Home");
     } catch (error) {
-      console.log(error);
+      console.log("Error saving expense:", error);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Expense title"
-        value={title}
-        onChangeText={setTitle}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Amount"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-        style={styles.input}
-      />
-
-      <Text style={styles.label}>Select Type:</Text>
-      <View style={styles.typeContainer}>
-        {['Cash', 'Credit Card'].map((option) => (
-          <TouchableOpacity
-            key={option}
-            style={[styles.typeButton, type === option && styles.activeType]}
-            onPress={() => setType(option)}>
-            <Text>{option}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Button
-        title={editingExpense ? 'Update Expense' : 'Add Expense'}
-        onPress={handleAddOrUpdateExpense}
-      />
+    <View style={{ padding: 20 }}>
+      <Text>Title</Text>
+      <TextInput value={title} onChangeText={setTitle} style={{ borderWidth: 1, marginBottom: 10 }} />
+      <Text>Amount</Text>
+      <TextInput value={amount} onChangeText={setAmount} keyboardType="numeric" style={{ borderWidth: 1, marginBottom: 10 }} />
+      <Text>Payment Method</Text>
+      <TextInput value={paymentMethod} onChangeText={setPaymentMethod} style={{ borderWidth: 1, marginBottom: 10 }} />
+      <Button title={existingExpense ? "Update Expense" : "Add Expense"} onPress={saveExpense} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginVertical: 6,
-    borderRadius: 6,
-  },
-  label: { marginTop: 10, fontWeight: 'bold' },
-  typeContainer: { flexDirection: 'row', marginVertical: 10 },
-  typeButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginRight: 10,
-    borderRadius: 6,
-  },
-  activeType: { backgroundColor: '#cce5ff', borderColor: '#007bff' },
-});
 
 
 
