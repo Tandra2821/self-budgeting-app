@@ -27,18 +27,16 @@ export default function AddExpenseScreen({ route, navigation }) {
       title,
       amount: parseFloat(amount),
       paymentMethod,
+      timestamp: existingExpense ? existingExpense.timestamp : new Date().toISOString(),
     };
 
     try {
       const stored = await AsyncStorage.getItem("expenses");
       const data = stored ? JSON.parse(stored) : [];
 
-      let updated;
-      if (existingExpense) {
-        updated = data.map((e) => (e.id === existingExpense.id ? newExpense : e));
-      } else {
-        updated = [...data, newExpense];
-      }
+      const updated = existingExpense
+        ? data.map((e) => (e.id === existingExpense.id ? newExpense : e))
+        : [...data, newExpense];
 
       await AsyncStorage.setItem("expenses", JSON.stringify(updated));
       navigation.navigate("Home");
@@ -50,18 +48,10 @@ export default function AddExpenseScreen({ route, navigation }) {
   const renderPaymentOption = (method) => (
     <TouchableOpacity
       key={method}
-      style={[
-        styles.optionButton,
-        paymentMethod === method && styles.optionSelected,
-      ]}
+      style={[styles.optionButton, paymentMethod === method && styles.optionSelected]}
       onPress={() => setPaymentMethod(method)}
     >
-      <Text
-        style={[
-          styles.optionText,
-          paymentMethod === method && styles.optionTextSelected,
-        ]}
-      >
+      <Text style={[styles.optionText, paymentMethod === method && styles.optionTextSelected]}>
         {method}
       </Text>
     </TouchableOpacity>
@@ -69,6 +59,11 @@ export default function AddExpenseScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Back button */}
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
+
       <Text style={styles.label}>Title</Text>
       <TextInput
         value={title}
@@ -87,9 +82,7 @@ export default function AddExpenseScreen({ route, navigation }) {
       />
 
       <Text style={styles.label}>Payment Method</Text>
-      <View style={styles.paymentContainer}>
-        {["Cash", "Credit Card", "Debit Card"].map(renderPaymentOption)}
-      </View>
+      <View style={styles.paymentContainer}>{["Cash", "Credit Card", "Debit Card"].map(renderPaymentOption)}</View>
 
       <Button
         title={existingExpense ? "Update Expense" : "Add Expense"}
@@ -102,6 +95,8 @@ export default function AddExpenseScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  backButton: { marginBottom: 15 },
+  backButtonText: { fontSize: 16, color: "#2196F3", fontWeight: "600" },
   label: { fontSize: 16, fontWeight: "500", marginTop: 10, marginBottom: 5 },
   input: {
     borderWidth: 1,
@@ -129,8 +124,3 @@ const styles = StyleSheet.create({
   optionText: { color: "#333", fontWeight: "500" },
   optionTextSelected: { color: "#fff", fontWeight: "600" },
 });
-
-
-
-
-
