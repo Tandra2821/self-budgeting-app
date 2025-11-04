@@ -1,20 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Button, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function AddExpenseScreen({ route, navigation }) {
   const existingExpense = route.params?.expense;
+  const isFocused = useIsFocused();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
 
   useEffect(() => {
-    if (existingExpense) {
-      setTitle(existingExpense.title);
-      setAmount(String(existingExpense.amount));
-      setPaymentMethod(existingExpense.paymentMethod);
+    if (isFocused) {
+      if (existingExpense) {
+        setTitle(existingExpense.title);
+        setAmount(String(existingExpense.amount));
+        setPaymentMethod(existingExpense.paymentMethod);
+      } else {
+        // Reset form when navigating to add new expense
+        setTitle("");
+        setAmount("");
+        setPaymentMethod("Cash");
+      }
     }
-  }, [existingExpense]);
+  }, [isFocused, existingExpense]);
 
   const saveExpense = async () => {
     if (!title || !amount) {
@@ -39,7 +48,16 @@ export default function AddExpenseScreen({ route, navigation }) {
         : [...data, newExpense];
 
       await AsyncStorage.setItem("expenses", JSON.stringify(updated));
-      navigation.navigate("Home");
+      
+      // Reset form if adding new expense (not editing)
+      if (!existingExpense) {
+        setTitle("");
+        setAmount("");
+        setPaymentMethod("Cash");
+        Alert.alert("Success", "Expense added successfully!");
+      } else {
+        navigation.navigate("Home");
+      }
     } catch (error) {
       console.log("Error saving expense:", error);
     }

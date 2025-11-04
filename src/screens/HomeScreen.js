@@ -119,11 +119,12 @@ export default function HomeScreen({ navigation }) {
     const map = { cash: categorized.cash, credit: categorized.credit, debit: categorized.debit };
     const data = map[categoryKey] || [];
     return (
-      <View style={styles.expandedSection}>
+      <View style={{ flex: 1 }}>
         <FlatList
           data={data}
           renderItem={renderExpense}
           keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 80 }}
           ListEmptyComponent={<Text style={styles.emptyText}>No expenses yet</Text>}
         />
       </View>
@@ -137,13 +138,6 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.pageTitle}>Overview</Text>
-        <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ padding: 8 }}>
-          <Ionicons name="menu" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-
       <View style={styles.cardRow}>
         <TouchableOpacity
           style={[styles.card, { backgroundColor: "#9ACD32", width: cardSize, height: cardSize }]}
@@ -170,17 +164,22 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Expanded category list (if any) */}
-      {expandedCategory && <SectionList categoryKey={expandedCategory} />}
-
       {/* All expenses header */}
       <View style={styles.allExpensesHeader}>
-        <Text style={styles.allExpensesTitle}>All Expenses</Text>
+        <Text style={styles.allExpensesTitle}>
+          {expandedCategory
+            ? `${expandedCategory.charAt(0).toUpperCase() + expandedCategory.slice(1)} Expenses`
+            : "All Expenses"}
+        </Text>
       </View>
 
-      {/* All expenses flow */}
+      {/* All expenses flow or filtered expenses */}
       <FlatList
-        data={[...expenses].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))}
+        data={
+          expandedCategory
+            ? categorized[expandedCategory].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            : [...expenses].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        }
         renderItem={renderExpense}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 80 }}
@@ -234,25 +233,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f7fa",
   },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingTop: 14,
-    paddingBottom: 6,
-  },
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1a237e",
-  },
   cardRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 15,
     paddingBottom: 12,
-    marginTop: 8,
+    marginTop: 20,
   },
   card: {
     borderRadius: 12,
@@ -274,15 +260,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  expandedSection: {
-    marginHorizontal: 15,
-    marginTop: 10,
-    marginBottom: 6,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    padding: 8,
-    maxHeight: 300,
-  },
+
 
   allExpensesHeader: {
     paddingHorizontal: 15,
