@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
+import { useIsFocused } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("window").width - 30;
 
@@ -9,10 +10,13 @@ export default function ReportsScreen() {
   const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState("Monthly");
   const [filteredData, setFilteredData] = useState({ cash: 0, credit: 0, debit: 0 });
+  const isFocused = useIsFocused();
 
   useEffect(() => {
-    loadExpenses();
-  }, []);
+    if (isFocused) {
+      loadExpenses();
+    }
+  }, [isFocused]);
 
   useEffect(() => {
     calculateFilteredData();
