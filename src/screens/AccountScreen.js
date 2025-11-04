@@ -4,14 +4,55 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AccountScreen({ navigation }) {
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    console.log('Loading user data...');
+    
     const load = async () => {
-      const u = await AsyncStorage.getItem("currentUser");
-      if (u) setUser(JSON.parse(u));
+      try {
+        console.log('Fetching from AsyncStorage...');
+        const u = await AsyncStorage.getItem("currentUser");
+        console.log('AsyncStorage result:', u);
+        
+        if (!isMounted) return;
+
+        if (u) {
+          const userData = JSON.parse(u);
+          console.log('User data parsed:', userData);
+          setUser(userData);
+        } else {
+          console.log('No user data found, redirecting to login...');
+          const parent = navigation.getParent && navigation.getParent();
+          if (parent && parent.replace) parent.replace('Login');
+          else navigation.replace('Login');
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        if (!isMounted) return;
+        
+        Alert.alert(
+          'Error',
+          'Failed to load user data. Please try logging in again.'
+        );
+        const parent = navigation.getParent && navigation.getParent();
+        if (parent && parent.replace) parent.replace('Login');
+        else navigation.replace('Login');
+      } finally {
+        if (isMounted) {
+          console.log('Setting loading to false');
+          setIsLoading(false);
+        }
+      }
     };
+
     load();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigation]);
 
   const signOut = async () => {
     Alert.alert(
@@ -23,8 +64,27 @@ export default function AccountScreen({ navigation }) {
           text: 'Sign out',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem("currentUser");
-            navigation.replace("Login");
+            try {
+              // Clear all user-related data
+              const keysToRemove = ['currentUser'];
+              await AsyncStorage.multiRemove(keysToRemove);
+              
+              // Navigate to login screen (use parent navigator if available)
+              const parent = navigation.getParent && navigation.getParent();
+              if (parent && parent.reset) {
+                parent.reset({ index: 0, routes: [{ name: 'Login' }] });
+              } else if (parent && parent.replace) {
+                parent.replace('Login');
+              } else {
+                navigation.replace('Login');
+              }
+            } catch (error) {
+              console.error('Error during sign out:', error);
+              Alert.alert(
+                'Error',
+                'There was a problem signing out. Please try again.'
+              );
+            }
           },
         },
       ]
@@ -39,12 +99,30 @@ export default function AccountScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  if (!user) return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Menu</Text>
-      <Text style={styles.small}>Loading...</Text>
-    </View>
-  );
+  console.log('Render state:', { isLoading, user });
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.title}>Menu</Text>
+        <Text style={styles.small}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!user) {
+    console.log('No user data in state, redirecting...');
+    // Add a small delay before navigation to ensure state updates are processed
+    setTimeout(() => {
+      const parent = navigation.getParent && navigation.getParent();
+      if (parent && parent.reset) {
+        parent.reset({ index: 0, routes: [{ name: 'Login' }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      }
+    }, 100);
+    return null;
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -89,6 +167,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   section: {
     marginBottom: 24,

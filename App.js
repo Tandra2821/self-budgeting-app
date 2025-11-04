@@ -108,19 +108,13 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={userToken ? "Main" : "Login"}>
-        {userToken ? (
-          // Logged in screens
-          <>
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
-          </>
-        ) : (
-          // Auth screens
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Sign Up" component={SignUpScreen} options={{ headerShown: false }} />
-          </>
-        )}
+        {/* Auth screens */}
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Sign Up" component={SignUpScreen} options={{ headerShown: false }} />
+
+        {/* Main app screens */}
+        <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -76,9 +78,12 @@ export default function LoginScreen({ navigation }) {
     try {
       const usersJSON = await AsyncStorage.getItem("users");
       const users = usersJSON ? JSON.parse(usersJSON) : [];
+      console.log("Current users:", users);
+      console.log("Attempting to register:", signupEmail.toLowerCase());
 
       const exists = users.some((u) => u.email.toLowerCase() === signupEmail.toLowerCase());
       if (exists) {
+        setSignupLoading(false);
         Alert.alert("Error", "This email is already registered");
         return;
       }
@@ -95,7 +100,7 @@ export default function LoginScreen({ navigation }) {
       await AsyncStorage.setItem("users", JSON.stringify(users));
       await AsyncStorage.setItem("currentUser", JSON.stringify(newUser));
       
-      navigation.replace("Main");
+  navigation.replace("Main");
     } catch (error) {
       Alert.alert("Error", "Failed to create account. Please try again.");
     } finally {
@@ -109,6 +114,13 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
     >
+      <View style={styles.backgroundLogoContainer}>
+        <Image
+          source={require("../../assets/logo.png")}
+          style={styles.backgroundLogo}
+          resizeMode="contain"
+        />
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome to Piggy Budget</Text>
@@ -211,19 +223,36 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
   },
+  backgroundLogoContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0,
+  },
+  backgroundLogo: {
+    width: width * 0.8,
+    height: width * 0.8,
+    opacity: 0.05,
+  },
   scrollContent: {
     flexGrow: 1,
     padding: 20,
+    zIndex: 1,
   },
   header: {
     alignItems: "center",
-    marginTop: 40,
-    marginBottom: 30,
+    marginVertical: 30,
   },
   title: {
     fontSize: 24,
