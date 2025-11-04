@@ -1,10 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, Alert, StyleSheet, Image, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Image,
+  Modal,
+  TouchableWithoutFeedback,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function HomeScreen({ navigation }) {
   const [expenses, setExpenses] = useState([]);
+  const [menuVisible, setMenuVisible] = useState(false);
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -89,13 +101,14 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.sectionTitle}>{title}</Text>
         <Text style={styles.sectionTotal}>${total.toFixed(2)}</Text>
       </View>
+
       <FlatList
         data={data}
         renderItem={renderExpense}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={<Text style={styles.emptyText}>No expenses yet</Text>}
-        nestedScrollEnabled={true} // internal scroll
         style={styles.list}
+        nestedScrollEnabled={true}
       />
     </View>
   );
@@ -103,35 +116,74 @@ export default function HomeScreen({ navigation }) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 20 }}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Image source={require("../../assets/logo.png")} style={styles.logo} />
-        <Text style={styles.headerText}>Piggy Budget</Text>
+    <View style={styles.container}>
+      <View style={styles.content}>
+        <Section title="Cash" data={categorized.cash} color="#9ACD32" total={totalCash} />
+        <Section title="Credit Card" data={categorized.credit} color="#78c4dfff" total={totalCredit} />
+        <Section title="Debit Card" data={categorized.debit} color="#e78deaff" total={totalDebit} />
       </View>
-
-      {/* SECTIONS */}
-      <Section title="Cash" data={categorized.cash} color="#9ACD32" total={totalCash} />
-      <Section title="Credit Card" data={categorized.credit} color="#78c4dfff" total={totalCredit} />
-      <Section title="Debit Card" data={categorized.debit} color="#e78deaff" total={totalDebit} />
 
       {/* FOOTER */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>© {currentYear} Piggy Budget</Text>
       </View>
-    </ScrollView>
+
+      {/* MENU MODAL */}
+      <Modal transparent visible={menuVisible} animationType="fade">
+        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+          <View style={styles.overlay} />
+        </TouchableWithoutFeedback>
+
+        <View style={styles.menuBox}>
+          <TouchableOpacity onPress={() => Alert.alert("Account Details", "Your account info here.")}>
+            <Text style={styles.menuItem}>Account Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => Alert.alert("Settings", "Settings coming soon!")}>
+            <Text style={styles.menuItem}>Settings</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => Alert.alert("Support", "Support page coming soon!")}>
+            <Text style={styles.menuItem}>Support</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={async () => {
+              await AsyncStorage.removeItem("currentUser");
+              setMenuVisible(false);
+              navigation.replace("Login");
+            }}
+          >
+            <Text style={[styles.menuItem, { color: "red" }]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f7fa", padding: 15 },
-
-  header: { flexDirection: "row", alignItems: "center", marginBottom: 15 },
-  logo: { width: 40, height: 40, marginRight: 10 },
-  headerText: { fontSize: 22, fontWeight: "700", color: "#1a237e" },
-
-  footer: { alignItems: "center", marginTop: 10, paddingVertical: 10 },
-  footerText: { fontSize: 14, color: "#333", fontWeight: "500" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#f5f7fa"
+  },
+  content: {
+    flex: 1,
+    padding: 15
+  },
+  footer: {
+    paddingVertical: 10,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+    backgroundColor: "#fff",
+    marginTop: 10
+  },
+  footerText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500"
+  },
 
   section: {
     borderRadius: 12,
@@ -141,9 +193,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 2,
-    height: 250, // fixed height, scrollable internally
+    height: 250,
   },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
   sectionTitle: { fontSize: 18, fontWeight: "600", color: "#fff" },
   sectionTotal: { fontSize: 18, fontWeight: "600", color: "#fff" },
   list: { flexGrow: 0 },
@@ -162,4 +219,40 @@ const styles = StyleSheet.create({
   edit: { color: "#595e5cff", marginRight: 15, fontWeight: "500" },
   delete: { color: "#FF4500", fontWeight: "500" },
   emptyText: { textAlign: "center", color: "rgba(255,255,255,0.7)", marginTop: 5 },
+
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
+  menuBox: {
+    position: "absolute",
+    top: 60,
+    right: 15,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  menuItem: {
+    fontSize: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    color: "#333",
+  },
+  content: {
+    flex: 1,
+    padding: 15,
+  },
+  footer: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+    backgroundColor: "#fff",
+  },
+  footerText: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 14,
+  },
 });
