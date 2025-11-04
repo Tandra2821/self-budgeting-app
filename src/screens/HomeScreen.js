@@ -9,6 +9,10 @@ import {
   Image,
   Modal,
   TouchableWithoutFeedback,
+  Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
@@ -16,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function HomeScreen({ navigation }) {
   const [expenses, setExpenses] = useState([]);
+  const [expandedCategory, setExpandedCategory] = useState(null); // 'cash' | 'credit' | 'debit' | null
   const [menuVisible, setMenuVisible] = useState(false);
   const isFocused = useIsFocused();
 
@@ -23,10 +28,18 @@ export default function HomeScreen({ navigation }) {
     loadExpenses();
   }, [isFocused]);
 
+  useEffect(() => {
+    // Enable LayoutAnimation on Android
+    if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
   const loadExpenses = async () => {
     try {
       const data = await AsyncStorage.getItem("expenses");
       if (data) setExpenses(JSON.parse(data));
+      else setExpenses([]);
     } catch (error) {
       console.log("Error loading expenses:", error);
     }
@@ -59,6 +72,7 @@ export default function HomeScreen({ navigation }) {
     { cash: [], credit: [], debit: [] }
   );
 
+  // Sort each category by timestamp (newest first)
   Object.keys(categorized).forEach((key) => {
     categorized[key].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   });
@@ -79,7 +93,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderExpense = ({ item }) => (
     <View style={styles.expenseItem}>
-      <View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.expenseTitle}>{item.title}</Text>
         <Text style={styles.expenseAmount}>${item.amount}</Text>
         <Text style={styles.expenseDate}>{formatDateTime(item.timestamp)}</Text>
@@ -95,33 +109,83 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
-  const Section = ({ title, data, color, total }) => (
-    <View style={[styles.section, { backgroundColor: color }]}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionTotal}>${total.toFixed(2)}</Text>
-      </View>
+  const toggleCategory = (key) => {
+    // Animate expand/collapse
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedCategory((prev) => (prev === key ? null : key));
+  };
 
-      <FlatList
-        data={data}
-        renderItem={renderExpense}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.emptyText}>No expenses yet</Text>}
-        style={styles.list}
-        nestedScrollEnabled={true}
-      />
-    </View>
-  );
+  const SectionList = ({ categoryKey }) => {
+    const map = { cash: categorized.cash, credit: categorized.credit, debit: categorized.debit };
+    const data = map[categoryKey] || [];
+    return (
+      <View style={styles.expandedSection}>
+        <FlatList
+          data={data}
+          renderItem={renderExpense}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={<Text style={styles.emptyText}>No expenses yet</Text>}
+        />
+      </View>
+    );
+  };
+
+  const { width } = Dimensions.get("window");
+  const cardSize = Math.floor((width - 60) / 3);
 
   const currentYear = new Date().getFullYear();
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Section title="Cash" data={categorized.cash} color="#9ACD32" total={totalCash} />
-        <Section title="Credit Card" data={categorized.credit} color="#78c4dfff" total={totalCredit} />
-        <Section title="Debit Card" data={categorized.debit} color="#e78deaff" total={totalDebit} />
+      <View style={styles.headerRow}>
+        <Text style={styles.pageTitle}>Overview</Text>
+        <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ padding: 8 }}>
+          <Ionicons name="menu" size={24} color="#333" />
+        </TouchableOpacity>
       </View>
+
+      <View style={styles.cardRow}>
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: "#9ACD32", width: cardSize, height: cardSize }]}
+          onPress={() => toggleCategory("cash")}
+        >
+          <Text style={styles.cardTitle}>Cash</Text>
+          <Text style={styles.cardTotal}>${totalCash.toFixed(2)}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: "#78c4dfff", width: cardSize, height: cardSize }]}
+          onPress={() => toggleCategory("credit")}
+        >
+          <Text style={styles.cardTitle}>Credit</Text>
+          <Text style={styles.cardTotal}>${totalCredit.toFixed(2)}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: "#e78deaff", width: cardSize, height: cardSize }]}
+          onPress={() => toggleCategory("debit")}
+        >
+          <Text style={styles.cardTitle}>Debit</Text>
+          <Text style={styles.cardTotal}>${totalDebit.toFixed(2)}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Expanded category list (if any) */}
+      {expandedCategory && <SectionList categoryKey={expandedCategory} />}
+
+      {/* All expenses header */}
+      <View style={styles.allExpensesHeader}>
+        <Text style={styles.allExpensesTitle}>All Expenses</Text>
+      </View>
+
+      {/* All expenses flow */}
+      <FlatList
+        data={[...expenses].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))}
+        renderItem={renderExpense}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: 80 }}
+        ListEmptyComponent={<Text style={{ textAlign: "center", color: "#666", marginTop: 8 }}>No expenses yet</Text>}
+      />
 
       {/* FOOTER */}
       <View style={styles.footer}>
@@ -151,7 +215,10 @@ export default function HomeScreen({ navigation }) {
             onPress={async () => {
               await AsyncStorage.removeItem("currentUser");
               setMenuVisible(false);
-              navigation.replace("Login");
+              // Try to use parent navigator, otherwise replace locally
+              const parent = navigation.getParent && navigation.getParent();
+              if (parent && parent.reset) parent.reset({ index: 0, routes: [{ name: "Login" }] });
+              else navigation.replace("Login");
             }}
           >
             <Text style={[styles.menuItem, { color: "red" }]}>Logout</Text>
@@ -163,62 +230,104 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#f5f7fa"
-  },
-  content: {
+  container: {
     flex: 1,
-    padding: 15
+    backgroundColor: "#f5f7fa",
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1a237e",
+  },
+  cardRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+    paddingBottom: 12,
+    marginTop: 8,
+  },
+  card: {
+    borderRadius: 12,
+    padding: 12,
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cardTotal: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  expandedSection: {
+    marginHorizontal: 15,
+    marginTop: 10,
+    marginBottom: 6,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    padding: 8,
+    maxHeight: 300,
+  },
+
+  allExpensesHeader: {
+    paddingHorizontal: 15,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  allExpensesTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333",
+  },
+
   footer: {
     paddingVertical: 10,
-    alignItems: "center",
+    paddingHorizontal: 15,
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
     backgroundColor: "#fff",
-    marginTop: 10
   },
   footerText: {
-    fontSize: 14,
+    textAlign: "center",
     color: "#666",
-    fontWeight: "500"
+    fontSize: 14,
   },
 
-  section: {
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
-    height: 250,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#fff" },
-  sectionTotal: { fontSize: 18, fontWeight: "600", color: "#fff" },
-  list: { flexGrow: 0 },
   expenseItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.3)",
+    backgroundColor: "#fff",
     borderRadius: 10,
     padding: 10,
     marginBottom: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  expenseTitle: { fontSize: 16, fontWeight: "500", color: "#fff" },
-  expenseAmount: { fontSize: 14, color: "#fff", marginTop: 2 },
-  expenseDate: { fontSize: 12, color: "#fff", marginTop: 2 },
+  expenseTitle: { fontSize: 16, fontWeight: "500", color: "#222" },
+  expenseAmount: { fontSize: 14, color: "#111", marginTop: 2 },
+  expenseDate: { fontSize: 12, color: "#888", marginTop: 2 },
   buttons: { flexDirection: "row", alignItems: "center" },
   edit: { color: "#595e5cff", marginRight: 15, fontWeight: "500" },
   delete: { color: "#FF4500", fontWeight: "500" },
-  emptyText: { textAlign: "center", color: "rgba(255,255,255,0.7)", marginTop: 5 },
+  emptyText: { textAlign: "center", color: "#666", marginTop: 5 },
 
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
   menuBox: {
@@ -238,21 +347,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     color: "#333",
-  },
-  content: {
-    flex: 1,
-    padding: 15,
-  },
-  footer: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
-    backgroundColor: "#fff",
-  },
-  footerText: {
-    textAlign: "center",
-    color: "#666",
-    fontSize: 14,
   },
 });
