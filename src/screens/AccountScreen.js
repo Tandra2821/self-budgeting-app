@@ -140,16 +140,14 @@ export default function AccountScreen({ navigation }) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
         {renderMenuItem('⚙️', 'Account Settings', () => Alert.alert('Coming Soon', 'Account settings will be available soon.'))}
-        {renderMenuItem('🔔', 'Notifications', () => Alert.alert('Coming Soon', 'Notification settings will be available soon.'))}
-        {renderMenuItem('🔒', 'Privacy', () => Alert.alert('Coming Soon', 'Privacy settings will be available soon.'))}
+        {renderMenuItem('🎨', 'Theme', () => Alert.alert('Coming Soon', 'Appearance settings will be available soon.'))}
       </View>
 
       {/* Support Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         {renderMenuItem('❓', 'Help Center', () => Alert.alert('Help Center', 'Need help? Contact us at support@piggybudget.com'))}
-        {renderMenuItem('📄', 'Terms of Service', () => Alert.alert('Terms', 'Terms of service content will be available soon.'))}
-        {renderMenuItem('🔐', 'Privacy Policy', () => Alert.alert('Privacy', 'Privacy policy content will be available soon.'))}
+        {renderMenuItem('🔐', 'Privacy Policy', () => Alert.alert('Privacy Policy','We respect your privacy. Self Budgeting App does not sell or share your personal or financial information. We collect only the data you provide to help track your budget and improve app functionality. Your data is stored securely and used only for app purposes.Thankyou.'))}
       </View>
 
       {/* Sign Out Button */}
