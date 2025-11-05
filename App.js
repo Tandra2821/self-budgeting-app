@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { TouchableOpacity, Text, View, Image, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, View, Image, ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider } from './src/context/ThemeContext';
 
@@ -17,40 +17,46 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function MainTabs() {
+  const [showLogoModal, setShowLogoModal] = React.useState(false);
+
   return (
-    <Tab.Navigator
-      screenOptions={({ navigation }) => ({
-        headerTitle: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Image 
-              source={require('./assets/logo.png')} 
-              style={{ width: 24, height: 24, marginRight: 8 }} 
-              resizeMode="contain"
-            />
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1a237e' }}>
-              Piggy Budget
-            </Text>
-          </View>
-        ),
-        headerTitleAlign: 'left',
-        headerRight: () => (
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Account')} 
-            style={{ paddingRight: 16 }}
-          >
-            <Text style={{ fontSize: 24 }}>≡</Text>
-          </TouchableOpacity>
-        ),
-        headerStyle: {
-          backgroundColor: '#fff',
-          elevation: 2,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-        }
-      })}
-    >
+    <>
+      <Tab.Navigator
+        screenOptions={({ navigation }) => ({
+          headerTitle: () => (
+            <TouchableOpacity 
+              onPress={() => setShowLogoModal(true)}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+            >
+              <Image 
+                source={require('./assets/logo.png')} 
+                style={{ width: 24, height: 24, marginRight: 8 }} 
+                resizeMode="contain"
+              />
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#1a237e' }}>
+                Piggy Budget
+              </Text>
+            </TouchableOpacity>
+          ),
+          headerTitleAlign: 'left',
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Account')} 
+              style={{ paddingRight: 16 }}
+            >
+              <Text style={{ fontSize: 24 }}>≡</Text>
+            </TouchableOpacity>
+          ),
+          headerStyle: {
+            backgroundColor: '#fff',
+            elevation: 2,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+          }
+        })}
+      >
       <Tab.Screen 
         name="Home" 
         component={HomeScreen}
@@ -73,6 +79,29 @@ function MainTabs() {
         }}
       />
     </Tab.Navigator>
+
+    {/* Logo Modal */}
+    <Modal
+      visible={showLogoModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowLogoModal(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowLogoModal(false)}
+      >
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('./assets/logo.png')} 
+            style={styles.logoExpanded}
+            resizeMode="contain"
+          />
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  </>
   );
 }
 
@@ -122,3 +151,30 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 150,
+    width: 250,
+    height: 250,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  logoExpanded: {
+    width: 400,
+    height: 450,
+  },
+});
