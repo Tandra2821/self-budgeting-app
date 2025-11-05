@@ -14,6 +14,7 @@ import {
   Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { auth, db } from "../firebase";
 
 export default function LoginScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("login"); // "login" or "signup"
@@ -30,6 +31,25 @@ export default function LoginScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signupLoading, setSignupLoading] = useState(false);
 
+  // Test Firebase Connection
+  const testFirebaseConnection = async () => {
+    try {
+      Alert.alert("Testing Firebase", "Attempting to connect...");
+      
+      // Test Authentication
+      console.log("Firebase Auth initialized:", auth ? "Yes" : "No");
+      console.log("Firebase Firestore initialized:", db ? "Yes" : "No");
+      
+      Alert.alert(
+        "Firebase Test", 
+        `Auth: ${auth ? "✓ Connected" : "✗ Failed"}\nFirestore: ${db ? "✓ Connected" : "✗ Failed"}`
+      );
+    } catch (error) {
+      console.error("Firebase test error:", error);
+      Alert.alert("Firebase Test Failed", error.message);
+    }
+  };
+
   const handleLogin = async () => {
     if (!loginEmail.trim() || !loginPassword) {
       Alert.alert("Error", "Please enter both email and password");
@@ -38,6 +58,31 @@ export default function LoginScreen({ navigation }) {
 
     setLoginLoading(true);
     try {
+      // Try Firebase Authentication first
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(loginEmail, loginPassword);
+        const firebaseUser = userCredential.user;
+        
+        // Get user data from Firestore
+        const userDoc = await db.collection("users").doc(firebaseUser.uid).get();
+        const userData = userDoc.data();
+        
+        const user = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: userData?.name || "User",
+          createdAt: userData?.createdAt || new Date().toISOString(),
+        };
+        
+        await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+        Alert.alert("Success", "Logged in with Firebase!");
+        navigation.replace("Main");
+        return;
+      } catch (firebaseError) {
+        console.log("Firebase login failed, trying local storage:", firebaseError.message);
+      }
+
+      // Fallback to local storage
       const usersJSON = await AsyncStorage.getItem("users");
       const users = usersJSON ? JSON.parse(usersJSON) : [];
 
@@ -76,6 +121,38 @@ export default function LoginScreen({ navigation }) {
 
     setSignupLoading(true);
     try {
+      // Try Firebase Authentication first
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(signupEmail, signupPassword);
+        const firebaseUser = userCredential.user;
+        
+        // Store user data in Firestore
+        await db.collection("users").doc(firebaseUser.uid).set({
+          name: name.trim(),
+          email: signupEmail.toLowerCase().trim(),
+          createdAt: new Date().toISOString(),
+        });
+        
+        const newUser = {
+          id: firebaseUser.uid,
+          name: name.trim(),
+          email: firebaseUser.email,
+          createdAt: new Date().toISOString(),
+        };
+        
+        await AsyncStorage.setItem("currentUser", JSON.stringify(newUser));
+        Alert.alert("Success", "Account created with Firebase!");
+        navigation.replace("Main");
+        return;
+      } catch (firebaseError) {
+        console.log("Firebase signup failed, using local storage:", firebaseError.message);
+        if (firebaseError.code === 'auth/email-already-in-use') {
+          Alert.alert("Error", "This email is already registered with Firebase");
+          return;
+        }
+      }
+
+      // Fallback to local storage
       const usersJSON = await AsyncStorage.getItem("users");
       const users = usersJSON ? JSON.parse(usersJSON) : [];
       console.log("Current users:", users);
@@ -100,7 +177,7 @@ export default function LoginScreen({ navigation }) {
       await AsyncStorage.setItem("users", JSON.stringify(users));
       await AsyncStorage.setItem("currentUser", JSON.stringify(newUser));
       
-  navigation.replace("Main");
+      navigation.replace("Main");
     } catch (error) {
       Alert.alert("Error", "Failed to create account. Please try again.");
     } finally {
@@ -153,6 +230,7 @@ export default function LoginScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Email"
+                placeholderTextColor="#999"
                 value={loginEmail}
                 onChangeText={setLoginEmail}
                 keyboardType="email-address"
@@ -161,6 +239,7 @@ export default function LoginScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor="#999"
                 value={loginPassword}
                 onChangeText={setLoginPassword}
                 secureTextEntry
@@ -181,12 +260,14 @@ export default function LoginScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Full Name"
+                placeholderTextColor="#999"
                 value={name}
                 onChangeText={setName}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
+                placeholderTextColor="#999"
                 value={signupEmail}
                 onChangeText={setSignupEmail}
                 keyboardType="email-address"
@@ -195,6 +276,7 @@ export default function LoginScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
+                placeholderTextColor="#999"
                 value={signupPassword}
                 onChangeText={setSignupPassword}
                 secureTextEntry
@@ -202,6 +284,7 @@ export default function LoginScreen({ navigation }) {
               <TextInput
                 style={styles.input}
                 placeholder="Confirm Password"
+                placeholderTextColor="#999"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -217,6 +300,14 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </>
           )}
+          
+          {/* Firebase Test Button */}
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={testFirebaseConnection}
+          >
+            <Text style={styles.testButtonText}>🔥 Test Firebase Connection</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -316,6 +407,20 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  testButton: {
+    backgroundColor: "#FF6B35",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+    borderWidth: 2,
+    borderColor: "#FF8555",
+  },
+  testButtonText: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "600",
   },
 });
