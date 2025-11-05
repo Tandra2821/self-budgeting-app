@@ -23,7 +23,7 @@
       "package": "com.piggybudget.app",
       "googleServicesFile": "./assets/google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
@@ -35,6 +35,12 @@
       "eas": {
         "projectId": "d712fc79-c329-4b5f-ae54-8b03e0ed3d0a"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d712fc79-c329-4b5f-ae54-8b03e0ed3d0a"
     }
   }
 }
