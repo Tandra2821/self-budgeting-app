@@ -139,7 +139,7 @@ export default function AccountScreen({ navigation }) {
       {/* Settings Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
-        {renderMenuItem('⚙️', 'Account Settings', () => Alert.alert('Coming Soon', 'Account settings will be available soon.'))}
+       
         {renderMenuItem('🎨', 'Theme', () => Alert.alert('Coming Soon', 'Appearance settings will be available soon.'))}
       </View>
 
