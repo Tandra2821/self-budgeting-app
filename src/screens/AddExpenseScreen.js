@@ -114,11 +114,14 @@ export default function AddExpenseScreen({ route, navigation }) {
       <Text style={[styles.label, { color: colors.text }]}>Payment Method</Text>
       <View style={styles.paymentContainer}>{["Cash", "Credit Card", "Debit Card"].map(renderPaymentOption)}</View>
 
-      <Button
-        title={existingExpense ? "Update Expense" : "Add Expense"}
+      <TouchableOpacity 
+        style={[styles.addButton, { backgroundColor: colors.primary }]}
         onPress={saveExpense}
-        color={colors.primary}
-      />
+      >
+        <Text style={styles.addButtonText}>
+          {existingExpense ? "Update Expense" : "Add Expense"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -148,4 +151,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   optionText: { fontWeight: "500" },
+  addButton: {
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
+  },
 });
