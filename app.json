@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "self-budgeting-app",
-    "slug": "self-budgeting-app",
+    "name": "Piggy Budget",
+    "slug": "piggy-budget",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,6 +16,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.piggybudget.app",
+       "googleServicesFile": "./assets/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

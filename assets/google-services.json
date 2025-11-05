@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "797394496691",
+    "project_id": "piggy-budget-fd4c8",
+    "storage_bucket": "piggy-budget-fd4c8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:797394496691:android:01b5f6881f4f85941994c6",
+        "android_client_info": {
+          "package_name": "com.piggybudget.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5DoYNaqLi-BiadRXSwPPh2PX6gjz7w8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
