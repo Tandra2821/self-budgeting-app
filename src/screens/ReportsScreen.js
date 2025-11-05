@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity } from
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
 import { useIsFocused } from "@react-navigation/native";
+import { useTheme } from "../context/ThemeContext";
 
 const screenWidth = Dimensions.get("window").width - 30;
 
 export default function ReportsScreen() {
+  const { colors, isDark } = useTheme();
   const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState("Monthly");
   const [filteredData, setFilteredData] = useState({ cash: 0, credit: 0, debit: 0 });
@@ -61,9 +63,9 @@ export default function ReportsScreen() {
       {
         data: [filteredData.cash, filteredData.credit, filteredData.debit],
         colors: [
-          () => `#9ACD32`,   // Cash
-          () => `#78c4dfff`, // Credit
-          () => `#e78deaff`, // Debit
+          () => colors.cashCard,   // Cash
+          () => colors.creditCard, // Credit
+          () => colors.debitCard,  // Debit
         ],
       },
     ],
@@ -71,18 +73,26 @@ export default function ReportsScreen() {
 
   const FilterButton = ({ label }) => (
     <TouchableOpacity
-      style={[styles.filterButton, filter === label && styles.filterButtonActive]}
+      style={[
+        styles.filterButton, 
+        { backgroundColor: colors.cardBackground, borderColor: colors.border },
+        filter === label && { backgroundColor: colors.primary, borderColor: colors.primary }
+      ]}
       onPress={() => setFilter(label)}
     >
-      <Text style={[styles.filterButtonText, filter === label && styles.filterButtonTextActive]}>
+      <Text style={[
+        styles.filterButtonText, 
+        { color: colors.text },
+        filter === label && { color: '#fff' }
+      ]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>📊 Spending Reports</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>📊 Spending Reports</Text>
 
       <View style={styles.filterContainer}>
         <FilterButton label="Weekly" />
@@ -100,26 +110,26 @@ export default function ReportsScreen() {
         withCustomBarColorFromData={true}
         flatColor={true}
         chartConfig={{
-          backgroundColor: "#ffffff",
-          backgroundGradientFrom: "#f5f7fa",
-          backgroundGradientTo: "#eaf2f8",
+          backgroundColor: colors.cardBackground,
+          backgroundGradientFrom: colors.cardBackground,
+          backgroundGradientTo: colors.cardBackground,
           decimalPlaces: 2,
-          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`, // label color
-          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          color: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+          labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
           style: { borderRadius: 16 },
         }}
         style={styles.chart}
       />
 
-      <View style={styles.summaryBox}>
-        <Text style={styles.summaryTitle}>Summary</Text>
-        <Text style={[styles.summaryText, { color: "#9ACD32" }]}>
+      <View style={[styles.summaryBox, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.summaryTitle, { color: colors.text }]}>Summary</Text>
+        <Text style={[styles.summaryText, { color: colors.cashCard }]}>
           💰 Cash: ${filteredData.cash.toFixed(2)}
         </Text>
-        <Text style={[styles.summaryText, { color: "#78c4dfff" }]}>
+        <Text style={[styles.summaryText, { color: colors.creditCard }]}>
           💳 Credit: ${filteredData.credit.toFixed(2)}
         </Text>
-        <Text style={[styles.summaryText, { color: "#e78deaff" }]}>
+        <Text style={[styles.summaryText, { color: colors.debitCard }]}>
           🏦 Debit: ${filteredData.debit.toFixed(2)}
         </Text>
       </View>
@@ -128,13 +138,12 @@ export default function ReportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 15 },
+  container: { flex: 1, padding: 15 },
   title: {
     fontSize: 22,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 20,
-    color: "#1a237e",
   },
   filterContainer: {
     flexDirection: "row",
@@ -146,15 +155,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginHorizontal: 5,
     borderRadius: 10,
-    backgroundColor: "#e0e0e0",
+    borderWidth: 1,
     alignItems: "center",
   },
-  filterButtonActive: { backgroundColor: "#2196F3" },
-  filterButtonText: { color: "#333", fontWeight: "500" },
-  filterButtonTextActive: { color: "#fff", fontWeight: "700" },
+  filterButtonText: { fontWeight: "500" },
   chart: { borderRadius: 16, marginVertical: 10 },
   summaryBox: {
-    backgroundColor: "#f0f8e9",
     borderRadius: 10,
     padding: 15,
     marginTop: 20,
@@ -163,7 +169,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 10,
-    color: "#2e7d32",
   },
-  summaryText: { fontSize: 16, marginVertical: 4, fontWeight: "500", color: "#333" },
+  summaryText: { fontSize: 16, marginVertical: 4, fontWeight: "500" },
 });

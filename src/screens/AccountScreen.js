@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AccountScreen({ navigation }) {
+  const { colors, isDark, themeSetting, changeTheme: updateTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showThemeModal, setShowThemeModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,11 +94,28 @@ export default function AccountScreen({ navigation }) {
     );
   };
 
+  const changeThemeHandler = async (selectedTheme) => {
+    try {
+      await updateTheme(selectedTheme);
+      setShowThemeModal(false);
+      Alert.alert('Theme Changed', `Theme set to ${selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}`);
+    } catch (error) {
+      console.error('Error saving theme:', error);
+      Alert.alert('Error', 'Failed to save theme preference.');
+    }
+  };
+
+  const getThemeLabel = () => {
+    if (themeSetting === 'light') return 'Light';
+    if (themeSetting === 'dark') return 'Dark';
+    return 'Automatic';
+  };
+
   const renderMenuItem = (icon, title, onPress) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]} onPress={onPress}>
       <Text style={styles.menuIcon}>{icon}</Text>
-      <Text style={styles.menuText}>{title}</Text>
-      <Text style={styles.chevron}>›</Text>
+      <Text style={[styles.menuText, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.chevron, { color: colors.textTertiary }]}>›</Text>
     </TouchableOpacity>
   );
 
@@ -103,9 +123,9 @@ export default function AccountScreen({ navigation }) {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <Text style={styles.title}>Menu</Text>
-        <Text style={styles.small}>Loading...</Text>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Menu</Text>
+        <Text style={[styles.small, { color: colors.textSecondary }]}>Loading...</Text>
       </View>
     );
   }
@@ -125,38 +145,98 @@ export default function AccountScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Profile Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Profile</Text>
-        <View style={styles.profileCard}>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          <Text style={styles.joinDate}>Joined {new Date(user.createdAt).toLocaleDateString()}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Profile</Text>
+        <View style={[styles.profileCard, { backgroundColor: colors.cardBackground }]}>
+          <Text style={[styles.userName, { color: colors.primary }]}>{user.name}</Text>
+          <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user.email}</Text>
+          <Text style={[styles.joinDate, { color: colors.textTertiary }]}>Joined {new Date(user.createdAt).toLocaleDateString()}</Text>
         </View>
       </View>
 
       {/* Settings Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Settings</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Settings</Text>
        
-        {renderMenuItem('🎨', 'Theme', () => Alert.alert('Coming Soon', 'Appearance settings will be available soon.'))}
+        {renderMenuItem('🎨', 'Theme', () => setShowThemeModal(true))}
       </View>
 
       {/* Support Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Support</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
         {renderMenuItem('❓', 'Help Center', () => Alert.alert('Help Center', 'Need help? Contact us at support@piggybudget.com'))}
         {renderMenuItem('🔐', 'Privacy Policy', () => Alert.alert('Privacy Policy','We respect your privacy. Self Budgeting App does not sell or share your personal or financial information. We collect only the data you provide to help track your budget and improve app functionality. Your data is stored securely and used only for app purposes.Thankyou.'))}
       </View>
 
       {/* Sign Out Button */}
-      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+      <TouchableOpacity style={[styles.signOutButton, { backgroundColor: colors.error }]} onPress={signOut}>
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
       {/* Version Info */}
-      <Text style={styles.version}>Version 1.0.0</Text>
+      <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.0.0</Text>
+
+      {/* Theme Modal */}
+      <Modal
+        visible={showThemeModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowThemeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Choose Theme</Text>
+            
+            <TouchableOpacity 
+              style={[
+                styles.themeOption, 
+                { backgroundColor: colors.background },
+                themeSetting === 'light' && { backgroundColor: '#e3f2fd', borderWidth: 2, borderColor: colors.primary }
+              ]}
+              onPress={() => changeThemeHandler('light')}
+            >
+              <Text style={styles.themeIcon}>☀️</Text>
+              <Text style={[styles.themeText, { color: colors.text }]}>Light</Text>
+              {themeSetting === 'light' && <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.themeOption, 
+                { backgroundColor: colors.background },
+                themeSetting === 'dark' && { backgroundColor: '#e3f2fd', borderWidth: 2, borderColor: colors.primary }
+              ]}
+              onPress={() => changeThemeHandler('dark')}
+            >
+              <Text style={styles.themeIcon}>🌙</Text>
+              <Text style={[styles.themeText, { color: colors.text }]}>Dark</Text>
+              {themeSetting === 'dark' && <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.themeOption, 
+                { backgroundColor: colors.background },
+                themeSetting === 'automatic' && { backgroundColor: '#e3f2fd', borderWidth: 2, borderColor: colors.primary }
+              ]}
+              onPress={() => changeThemeHandler('automatic')}
+            >
+              <Text style={styles.themeIcon}>⚙️</Text>
+              <Text style={[styles.themeText, { color: colors.text }]}>Automatic</Text>
+              {themeSetting === 'automatic' && <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setShowThemeModal(false)}
+            >
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -164,7 +244,6 @@ export default function AccountScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -177,12 +256,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
     marginHorizontal: 16,
     marginBottom: 8,
   },
   profileCard: {
-    backgroundColor: '#fff',
     padding: 16,
     marginHorizontal: 16,
     borderRadius: 12,
@@ -195,26 +272,21 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1a237e',
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 4,
   },
   joinDate: {
     fontSize: 14,
-    color: '#888',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   menuIcon: {
     fontSize: 20,
@@ -223,15 +295,12 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
   },
   chevron: {
     fontSize: 20,
-    color: '#ccc',
   },
   signOutButton: {
     margin: 16,
-    backgroundColor: '#ff5252',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -243,8 +312,52 @@ const styles = StyleSheet.create({
   },
   version: {
     textAlign: 'center',
-    color: '#999',
     fontSize: 14,
     marginBottom: 24
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: 20,
+    width: '80%',
+    maxWidth: 350,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  themeIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  themeText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  checkmark: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  cancelButton: {
+    marginTop: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+  },
 });

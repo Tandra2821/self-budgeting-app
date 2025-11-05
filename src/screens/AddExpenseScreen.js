@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Button, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AddExpenseScreen({ route, navigation }) {
+  const { colors } = useTheme();
   const existingExpense = route.params?.expense;
   const isFocused = useIsFocused();
   const [title, setTitle] = useState("");
@@ -66,64 +68,72 @@ export default function AddExpenseScreen({ route, navigation }) {
   const renderPaymentOption = (method) => (
     <TouchableOpacity
       key={method}
-      style={[styles.optionButton, paymentMethod === method && styles.optionSelected]}
+      style={[
+        styles.optionButton, 
+        { backgroundColor: colors.background },
+        paymentMethod === method && { backgroundColor: colors.primary }
+      ]}
       onPress={() => setPaymentMethod(method)}
     >
-      <Text style={[styles.optionText, paymentMethod === method && styles.optionTextSelected]}>
+      <Text style={[
+        styles.optionText, 
+        { color: colors.text },
+        paymentMethod === method && { color: '#fff' }
+      ]}>
         {method}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Back button */}
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backButtonText}>← Back</Text>
+        <Text style={[styles.backButtonText, { color: colors.primary }]}>← Back</Text>
       </TouchableOpacity>
 
-      <Text style={styles.label}>Title</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Title</Text>
       <TextInput
         value={title}
         onChangeText={setTitle}
         placeholder="Enter expense title"
-        style={styles.input}
+        placeholderTextColor={colors.textTertiary}
+        style={[styles.input, { backgroundColor: colors.cardBackground, borderColor: colors.border, color: colors.text }]}
       />
 
-      <Text style={styles.label}>Amount</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Amount</Text>
       <TextInput
         value={amount}
         onChangeText={setAmount}
         placeholder="Enter amount"
+        placeholderTextColor={colors.textTertiary}
         keyboardType="numeric"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.cardBackground, borderColor: colors.border, color: colors.text }]}
       />
 
-      <Text style={styles.label}>Payment Method</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Payment Method</Text>
       <View style={styles.paymentContainer}>{["Cash", "Credit Card", "Debit Card"].map(renderPaymentOption)}</View>
 
       <Button
         title={existingExpense ? "Update Expense" : "Add Expense"}
         onPress={saveExpense}
-        color="#2196F3"
+        color={colors.primary}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { flex: 1, padding: 20 },
   backButton: { marginBottom: 15 },
-  backButtonText: { fontSize: 16, color: "#2196F3", fontWeight: "600" },
+  backButtonText: { fontSize: 16, fontWeight: "600" },
   label: { fontSize: 16, fontWeight: "500", marginTop: 10, marginBottom: 5 },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
     borderRadius: 10,
     padding: 12,
     fontSize: 16,
     marginBottom: 15,
-    backgroundColor: "#f9f9f9",
   },
   paymentContainer: {
     flexDirection: "row",
@@ -135,10 +145,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginHorizontal: 4,
     borderRadius: 10,
-    backgroundColor: "#f0f0f0",
     alignItems: "center",
   },
-  optionSelected: { backgroundColor: "#2196F3" },
-  optionText: { color: "#333", fontWeight: "500" },
-  optionTextSelected: { color: "#fff", fontWeight: "600" },
+  optionText: { fontWeight: "500" },
 });

@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TouchableOpacity, Text, View, Image, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeProvider } from './src/context/ThemeContext';
 
 import HomeScreen from './src/screens/HomeScreen';
 import AddExpenseScreen from './src/screens/AddExpenseScreen';
@@ -106,16 +107,18 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={userToken ? "Main" : "Login"}>
-        {/* Auth screens */}
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Sign Up" component={SignUpScreen} options={{ headerShown: false }} />
+    <ThemeProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName={userToken ? "Main" : "Login"}>
+          {/* Auth screens */}
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Sign Up" component={SignUpScreen} options={{ headerShown: false }} />
 
-        {/* Main app screens */}
-        <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-        <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
-      </Stack.Navigator>
-    </NavigationContainer>
+          {/* Main app screens */}
+          <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+          <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
