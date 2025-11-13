@@ -29,7 +29,8 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "extra": {
       "eas": {
@@ -41,6 +42,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/d712fc79-c329-4b5f-ae54-8b03e0ed3d0a"
-    }
+    },
+    "platforms": ["ios", "android", "web"]
   }
 }

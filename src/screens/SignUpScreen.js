@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signUpWithEmail } from '../services/authService';
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState("");

@@ -110,7 +110,6 @@ export default function App() {
   const [userToken, setUserToken] = React.useState(null);
 
   React.useEffect(() => {
-    // Check for stored user token when app starts
     checkUserToken();
   }, []);
 

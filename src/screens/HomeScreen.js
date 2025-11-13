@@ -14,6 +14,8 @@ import {
   Platform,
   UIManager,
 } from "react-native";
+import { db, auth } from '../services/firebase';
+import { collection, getDocs, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,20 +39,120 @@ export default function HomeScreen({ navigation }) {
     }
   }, []);
 
+  // Load expenses from Firestore with real-time updates
   const loadExpenses = async () => {
     try {
-      const data = await AsyncStorage.getItem("expenses");
-      if (data) setExpenses(JSON.parse(data));
-      else setExpenses([]);
+      console.log("Setting up Firestore listener for expenses...");
+      
+      // Get current user safely
+      let currentUser = null;
+      
+      if (auth) {
+        currentUser = auth.currentUser;
+      }
+      
+      let userId = null;
+      
+      if (currentUser) {
+        userId = currentUser.uid;
+        console.log("👤 Loading expenses for Firebase user:", userId);
+      } else {
+        // Try to get user from AsyncStorage
+        try {
+          const storedUser = await AsyncStorage.getItem("currentUser");
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            userId = userData.id;
+            console.log("👤 Loading expenses for local user:", userId);
+          }
+        } catch (error) {
+          console.log("⚠️ Could not get user info");
+        }
+      }
+      
+      // Check if database is available
+      if (!db) {
+        console.warn("📄 Firestore not available, falling back to local storage");
+        loadExpensesFromLocal();
+        return;
+      }
+      
+      // Real-time listener for expenses
+      const unsubscribe = onSnapshot(
+        collection(db, 'expenses'), 
+        (querySnapshot) => {
+          const expensesData = [];
+          querySnapshot.forEach((doc) => {
+            const expense = {
+              id: doc.id,
+              ...doc.data()
+            };
+            
+            // Filter expenses for current user (or include all if no user context)
+            if (!userId || expense.userId === userId || expense.userId === "anonymous") {
+              expensesData.push(expense);
+            }
+          });
+          
+          // Sort by timestamp (newest first)
+          const sortedExpenses = expensesData.sort((a, b) => 
+            new Date(b.timestamp) - new Date(a.timestamp)
+          );
+          
+          setExpenses(sortedExpenses);
+          console.log("✅ Loaded expenses from Firestore:", sortedExpenses.length);
+        },
+        (error) => {
+          console.error("❌ Firestore listener error:", error);
+          // Fallback to AsyncStorage if Firebase fails
+          loadExpensesFromLocal();
+        }
+      );
+
+      // Return unsubscribe function for cleanup
+      return unsubscribe;
     } catch (error) {
-      console.log("Error loading expenses:", error);
+      console.error("❌ Error setting up Firestore listener:", error);
+      // Fallback to local storage
+      loadExpensesFromLocal();
+    }
+  };
+
+  // Fallback function to load from AsyncStorage
+  const loadExpensesFromLocal = async () => {
+    try {
+      const data = await AsyncStorage.getItem("expenses");
+      if (data) {
+        const localExpenses = JSON.parse(data);
+        setExpenses(localExpenses);
+        console.log("📱 Loaded expenses from local storage:", localExpenses.length);
+      }
+    } catch (error) {
+      console.error("Error loading local expenses:", error);
     }
   };
 
   const deleteExpense = async (id) => {
-    const updated = expenses.filter((item) => item.id !== id);
-    await AsyncStorage.setItem("expenses", JSON.stringify(updated));
-    setExpenses(updated);
+    try {
+      // Check if database is available
+      if (db) {
+        // Delete from Firestore
+        await deleteDoc(doc(db, 'expenses', id));
+        console.log("✅ Expense deleted from Firestore:", id);
+      } else {
+        console.warn("📄 Firestore not available for deletion");
+      }
+      
+      // Also remove from AsyncStorage backup
+      const updated = expenses.filter((item) => item.id !== id);
+      await AsyncStorage.setItem("expenses", JSON.stringify(updated));
+    } catch (error) {
+      console.error("❌ Error deleting expense:", error);
+      // Fallback: delete from local storage only
+      const updated = expenses.filter((item) => item.id !== id);
+      await AsyncStorage.setItem("expenses", JSON.stringify(updated));
+      setExpenses(updated);
+    }
   };
 
   const confirmDelete = (id) => {

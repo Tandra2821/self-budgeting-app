@@ -4,6 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
 import { useIsFocused } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
+import { db } from '../services/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const screenWidth = Dimensions.get("window").width - 30;
 
@@ -26,10 +28,55 @@ export default function ReportsScreen() {
 
   const loadExpenses = async () => {
     try {
-      const data = await AsyncStorage.getItem("expenses");
-      if (data) setExpenses(JSON.parse(data));
+      console.log("Loading expenses for reports from Firestore...");
+      
+      // Check if database is available
+      if (!db) {
+        console.warn("📄 Firestore not available for reports, falling back to local storage");
+        loadExpensesFromLocal();
+        return;
+      }
+      
+      // Real-time listener for expenses
+      const unsubscribe = onSnapshot(
+        collection(db, 'expenses'), 
+        (querySnapshot) => {
+          const expensesData = [];
+          querySnapshot.forEach((doc) => {
+            expensesData.push({
+              id: doc.id,
+              ...doc.data()
+            });
+          });
+          
+          setExpenses(expensesData);
+          console.log("✅ Loaded expenses for reports:", expensesData.length);
+        },
+        (error) => {
+          console.error("❌ Error loading expenses for reports:", error);
+          // Fallback to AsyncStorage
+          loadExpensesFromLocal();
+        }
+      );
+
+      // Return unsubscribe function for cleanup
+      return unsubscribe;
     } catch (error) {
-      console.log("Error loading reports:", error);
+      console.error("Error setting up Firestore listener for reports:", error);
+      loadExpensesFromLocal();
+    }
+  };
+
+  // Fallback function to load from AsyncStorage
+  const loadExpensesFromLocal = async () => {
+    try {
+      const data = await AsyncStorage.getItem("expenses");
+      if (data) {
+        setExpenses(JSON.parse(data));
+        console.log("📱 Loaded expenses from local storage for reports");
+      }
+    } catch (error) {
+      console.log("Error loading reports from local storage:", error);
     }
   };
 
