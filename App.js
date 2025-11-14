@@ -121,15 +121,46 @@ export default function App() {
       checkUserToken();
     };
     
-    // Check every few seconds if no user is logged in
+    // Check every 3 seconds for authentication changes
     const interval = setInterval(() => {
-      if (!userToken) {
-        checkAuth();
-      }
-    }, 2000);
+      checkAuth();
+    }, 3000);
     
-    return () => clearInterval(interval);
-  }, [userToken]);
+    // Only listen for storage events on web platform
+    let storageCleanup = null;
+    
+    try {
+      // Check if we're in a web environment with proper window object
+      if (typeof window !== 'undefined' && window.addEventListener && typeof window.addEventListener === 'function') {
+        const handleStorageChange = (e) => {
+          if (e.key === 'currentUser' && e.newValue === null) {
+            console.log('🔄 Storage change detected: user logged out');
+            setUserToken(null);
+            setShowDemo(false);
+          }
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        
+        storageCleanup = () => {
+          window.removeEventListener('storage', handleStorageChange);
+        };
+      }
+    } catch (error) {
+      console.log('⚠️ Storage listener not available:', error.message);
+    }
+    
+    return () => {
+      clearInterval(interval);
+      if (storageCleanup) {
+        try {
+          storageCleanup();
+        } catch (error) {
+          console.log('⚠️ Error cleaning up storage listener:', error.message);
+        }
+      }
+    };
+  }, []);
 
   const checkUserToken = async () => {
     try {
@@ -149,8 +180,13 @@ export default function App() {
           await AsyncStorage.removeItem('shouldShowDemo');
         }
       } else {
-        console.log("🔐 No user found in storage");
-        setUserToken(null);
+        console.log("🔐 No user found in storage - should show login");
+        // If no user and we currently have a token, clear it
+        if (userToken) {
+          console.log("🔄 Clearing user token state");
+          setUserToken(null);
+          setShowDemo(false);
+        }
       }
     } catch (error) {
       console.log('Error checking user token:', error);
@@ -199,14 +235,37 @@ export default function App() {
   return (
     <ThemeProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName={userToken ? "Main" : "Login"}>
-          {/* Auth screens */}
-          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Sign Up" component={SignUpScreen} options={{ headerShown: false }} />
-
-          {/* Main app screens */}
-          <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-          <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
+        <Stack.Navigator 
+          initialRouteName={userToken ? "Main" : "Login"}
+          key={userToken ? "authenticated" : "unauthenticated"}
+        >
+          {userToken ? (
+            <>
+              {/* Main app screens */}
+              <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="Account" 
+                component={AccountScreen} 
+                options={({ navigation }) => ({
+                  title: 'Account',
+                  headerLeft: () => (
+                    <TouchableOpacity 
+                      onPress={() => navigation.goBack()}
+                      style={{ paddingLeft: 16, paddingVertical: 8 }}
+                    >
+                      <Text style={{ fontSize: 18, color: '#1a237e' }}>‹ Back</Text>
+                    </TouchableOpacity>
+                  ),
+                })}
+              />
+            </>
+          ) : (
+            <>
+              {/* Auth screens */}
+              <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Sign Up" component={SignUpScreen} options={{ headerShown: false }} />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
 

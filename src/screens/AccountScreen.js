@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../context/ThemeContext";
 import DemoWalkthrough from "./DemoWalkthrough";
@@ -60,40 +60,66 @@ export default function AccountScreen({ navigation }) {
   }, [navigation]);
 
   const signOut = async () => {
-    Alert.alert(
-      'Sign out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Clear all user-related data
-              const keysToRemove = ['currentUser'];
-              await AsyncStorage.multiRemove(keysToRemove);
-              
-              // Navigate to login screen (use parent navigator if available)
-              const parent = navigation.getParent && navigation.getParent();
-              if (parent && parent.reset) {
-                parent.reset({ index: 0, routes: [{ name: 'Login' }] });
-              } else if (parent && parent.replace) {
-                parent.replace('Login');
-              } else {
-                navigation.replace('Login');
-              }
-            } catch (error) {
-              console.error('Error during sign out:', error);
-              Alert.alert(
-                'Error',
-                'There was a problem signing out. Please try again.'
-              );
-            }
-          },
-        },
-      ]
-    );
+    console.log('🔄 Sign out button clicked!'); // Add debugging
+    
+    // Use native confirm for web, Alert for native
+    const shouldSignOut = Platform.OS === 'web' 
+      ? window.confirm('Are you sure you want to sign out?')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Sign out',
+            'Are you sure you want to sign out?',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Sign out', style: 'destructive', onPress: () => resolve(true) }
+            ]
+          );
+        });
+
+    if (!shouldSignOut) return;
+
+    try {
+      console.log('🚪 Starting signout process...');
+      
+      // Clear all user-related data
+      const keysToRemove = ['currentUser', 'hasSeenDemo', 'shouldShowDemo'];
+      await AsyncStorage.multiRemove(keysToRemove);
+      
+      console.log('✅ User data cleared from storage');
+      
+      // Force immediate page reload for web
+      if (typeof window !== 'undefined') {
+        console.log('🌐 Web environment - forcing page reload');
+        setTimeout(() => {
+          window.location.href = window.location.origin;
+        }, 100);
+        return;
+      }
+      
+      // For mobile/Expo environment
+      console.log('📱 Mobile environment - using navigation');
+      const parent = navigation.getParent?.();
+      if (parent?.reset) {
+        parent.reset({ 
+          index: 0, 
+          routes: [{ name: 'Login' }] 
+        });
+      } else {
+        navigation.navigate('Login');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error during sign out:', error);
+      // Even if there's an error, try to redirect on web
+      if (typeof window !== 'undefined') {
+        window.location.href = window.location.origin;
+      } else {
+        Alert.alert(
+          'Error',
+          'There was a problem signing out. Please refresh the page.'
+        );
+      }
+    }
   };
 
   const changeThemeHandler = async (selectedTheme) => {
@@ -187,7 +213,16 @@ export default function AccountScreen({ navigation }) {
       </View>
 
       {/* Sign Out Button */}
-      <TouchableOpacity style={[styles.signOutButton, { backgroundColor: colors.error }]} onPress={signOut}>
+      <TouchableOpacity 
+        style={[styles.signOutButton, { backgroundColor: colors.error }]} 
+        onPress={signOut}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Sign out of your account"
+        onPressIn={() => console.log('Sign out button pressed in')}
+        onPressOut={() => console.log('Sign out button pressed out')}
+      >
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
@@ -327,11 +362,18 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    cursor: 'pointer', // Add cursor pointer for web
+    userSelect: 'none', // Prevent text selection on web
+    position: 'relative', // Ensure proper positioning
+    zIndex: 1, // Ensure it's above other elements
+    minHeight: 48, // Ensure minimum touch target
+    justifyContent: 'center', // Center content
   },
   signOutText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    pointerEvents: 'none', // Prevent text from intercepting clicks
   },
   version: {
     textAlign: 'center',
