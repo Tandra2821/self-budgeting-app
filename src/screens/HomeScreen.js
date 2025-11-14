@@ -91,10 +91,10 @@ export default function HomeScreen({ navigation }) {
               ...doc.data()
             };
             
-            // Filter expenses for current user (or include all if no user context)
-            if (!userId || expense.userId === userId || expense.userId === "anonymous") {
-              expensesData.push(expense);
-            }
+                      // Only show expenses for current user
+          if (userId && expense.userId === userId) {
+            expensesData.push(expense);
+          }
           });
           
           // Sort by timestamp (newest first)
@@ -124,11 +124,26 @@ export default function HomeScreen({ navigation }) {
   // Fallback function to load from AsyncStorage
   const loadExpensesFromLocal = async () => {
     try {
+      // Get current user
+      let userId = null;
+      const storedUser = await AsyncStorage.getItem("currentUser");
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        userId = userData.id;
+      }
+      
+      if (!userId) {
+        setExpenses([]);
+        return;
+      }
+      
       const data = await AsyncStorage.getItem("expenses");
       if (data) {
-        const localExpenses = JSON.parse(data);
-        setExpenses(localExpenses);
-        console.log("📱 Loaded expenses from local storage:", localExpenses.length);
+        const allExpenses = JSON.parse(data);
+        // Filter expenses for current user only
+        const userExpenses = allExpenses.filter(expense => expense.userId === userId);
+        setExpenses(userExpenses);
+        console.log("📱 Loaded user expenses from local storage:", userExpenses.length);
       }
     } catch (error) {
       console.error("Error loading local expenses:", error);

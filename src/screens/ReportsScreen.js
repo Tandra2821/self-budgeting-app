@@ -56,16 +56,38 @@ export default function ReportsScreen() {
         return;
       }
       
+      // Get current user
+      let userId = null;
+      try {
+        const storedUser = await AsyncStorage.getItem("currentUser");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          userId = userData.id;
+        }
+      } catch (error) {
+        console.log("⚠️ Could not get user info for reports");
+      }
+
+      if (!userId) {
+        console.log("❌ No user found for reports");
+        setExpenses([]);
+        return;
+      }
+
       // Real-time listener for expenses
       const unsubscribe = onSnapshot(
         collection(db, 'expenses'), 
         (querySnapshot) => {
           const expensesData = [];
           querySnapshot.forEach((doc) => {
-            expensesData.push({
+            const expense = {
               id: doc.id,
               ...doc.data()
-            });
+            };
+            // Only include expenses for current user
+            if (expense.userId === userId) {
+              expensesData.push(expense);
+            }
           });
           
           setExpenses(expensesData);
@@ -89,10 +111,26 @@ export default function ReportsScreen() {
   // Fallback function to load from AsyncStorage
   const loadExpensesFromLocal = async () => {
     try {
+      // Get current user
+      let userId = null;
+      const storedUser = await AsyncStorage.getItem("currentUser");
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        userId = userData.id;
+      }
+      
+      if (!userId) {
+        setExpenses([]);
+        return;
+      }
+      
       const data = await AsyncStorage.getItem("expenses");
       if (data) {
-        setExpenses(JSON.parse(data));
-        console.log("📱 Loaded expenses from local storage for reports");
+        const allExpenses = JSON.parse(data);
+        // Filter expenses for current user only
+        const userExpenses = allExpenses.filter(expense => expense.userId === userId);
+        setExpenses(userExpenses);
+        console.log("📱 Loaded user expenses from local storage for reports:", userExpenses.length);
       }
     } catch (error) {
       console.log("Error loading reports from local storage:", error);

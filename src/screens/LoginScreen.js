@@ -39,6 +39,8 @@ export default function LoginScreen({ navigation }) {
 
 
   const handleLogin = async () => {
+    console.log("🔘 Login button pressed!");
+    
     if (!loginEmail.trim() || !loginPassword) {
       Alert.alert("Error", "Please enter both email and password");
       return;
@@ -58,8 +60,15 @@ export default function LoginScreen({ navigation }) {
 
       if (user) {
         await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+        console.log("✅ User logged in successfully, navigating to main app");
+        
+        // Use reset instead of replace to ensure proper navigation
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+        
         Alert.alert("Success", "Logged in successfully!");
-        navigation.replace("Main");
       } else {
         Alert.alert("Login Failed", "Invalid email or password.");
       }
@@ -73,6 +82,8 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleSignUp = async () => {
+    console.log("🔘 SignUp button pressed!");
+    
     if (!name.trim() || !signupEmail.trim() || !signupPassword || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -114,8 +125,19 @@ export default function LoginScreen({ navigation }) {
       await AsyncStorage.setItem("users", JSON.stringify(users));
       await AsyncStorage.setItem("currentUser", JSON.stringify(newUser));
       
+      // Mark as new user who should see demo
+      console.log("🎯 Setting shouldShowDemo flag for new user");
+      await AsyncStorage.setItem("shouldShowDemo", "true");
+      
+      console.log("✅ User account created successfully, navigating to main app");
+      
       Alert.alert("Success", "Account created successfully!");
-      navigation.replace("Main");
+      
+      // Use reset instead of replace to ensure proper navigation  
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
       
     } catch (error) {
       console.error("❌ Signup error:", error);
@@ -212,9 +234,13 @@ export default function LoginScreen({ navigation }) {
                 secureTextEntry
               />
               <TouchableOpacity
-                style={styles.button}
-                onPress={handleLogin}
+                style={[styles.button, loginLoading && { opacity: 0.6 }]}
+                onPress={() => {
+                  console.log("Login button touched!");
+                  handleLogin();
+                }}
                 disabled={loginLoading}
+                activeOpacity={0.7}
               >
                 <Text style={styles.buttonText}>
                   {loginLoading ? "Signing in..." : "Sign In"}
@@ -267,9 +293,13 @@ export default function LoginScreen({ navigation }) {
                 secureTextEntry
               />
               <TouchableOpacity
-                style={styles.button}
-                onPress={handleSignUp}
+                style={[styles.button, signupLoading && { opacity: 0.6 }]}
+                onPress={() => {
+                  console.log("SignUp button touched!");
+                  handleSignUp();
+                }}
                 disabled={signupLoading}
+                activeOpacity={0.7}
               >
                 <Text style={styles.buttonText}>
                   {signupLoading ? "Creating Account..." : "Create Account"}

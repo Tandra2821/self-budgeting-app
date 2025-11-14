@@ -12,6 +12,7 @@ import ReportsScreen from './src/screens/ReportsScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import AccountScreen from './src/screens/AccountScreen';
+import DemoWalkthrough from './src/screens/DemoWalkthrough';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -108,21 +109,82 @@ function MainTabs() {
 export default function App() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [userToken, setUserToken] = React.useState(null);
+  const [showDemo, setShowDemo] = React.useState(false);
 
   React.useEffect(() => {
     checkUserToken();
   }, []);
 
+  // Re-check user token when app comes into focus
+  React.useEffect(() => {
+    const checkAuth = () => {
+      checkUserToken();
+    };
+    
+    // Check every few seconds if no user is logged in
+    const interval = setInterval(() => {
+      if (!userToken) {
+        checkAuth();
+      }
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [userToken]);
+
   const checkUserToken = async () => {
     try {
       const currentUser = await AsyncStorage.getItem('currentUser');
+      const shouldShowDemo = await AsyncStorage.getItem('shouldShowDemo');
+      
       if (currentUser) {
-        setUserToken(JSON.parse(currentUser));
+        const userData = JSON.parse(currentUser);
+        console.log("🔐 Found user in storage:", userData.email);
+        setUserToken(userData);
+        
+        // Show demo for new users
+        if (shouldShowDemo === 'true') {
+          console.log("🎯 Showing demo for new user");
+          setShowDemo(true);
+          // Remove the flag so demo doesn't show again
+          await AsyncStorage.removeItem('shouldShowDemo');
+        }
+      } else {
+        console.log("🔐 No user found in storage");
+        setUserToken(null);
       }
     } catch (error) {
       console.log('Error checking user token:', error);
+      setUserToken(null);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const showDemoForNewUser = async () => {
+    try {
+      const hasSeenDemo = await AsyncStorage.getItem('hasSeenDemo');
+      if (!hasSeenDemo) {
+        setShowDemo(true);
+      }
+    } catch (error) {
+    }
+  };
+
+  const handleDemoComplete = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenDemo', 'true');
+      setShowDemo(false);
+    } catch (error) {
+      console.log('Error saving demo completion:', error);
+    }
+  };
+
+  const handleDemoSkip = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenDemo', 'true');
+      setShowDemo(false);
+    } catch (error) {
+      console.log('Error saving demo skip:', error);
     }
   };
 
@@ -147,6 +209,13 @@ export default function App() {
           <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Account' }} />
         </Stack.Navigator>
       </NavigationContainer>
+
+      {/* Demo Walkthrough */}
+      <DemoWalkthrough 
+        visible={showDemo}
+        onComplete={handleDemoComplete}
+        onSkip={handleDemoSkip}
+      />
     </ThemeProvider>
   );
 }

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../context/ThemeContext";
+import DemoWalkthrough from "./DemoWalkthrough";
 
 export default function AccountScreen({ navigation }) {
   const { colors, isDark, themeSetting, changeTheme: updateTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -111,6 +113,19 @@ export default function AccountScreen({ navigation }) {
     return 'Automatic';
   };
 
+  const handleShowDemo = () => {
+    setShowDemo(true);
+  };
+
+  const handleDemoComplete = () => {
+    setShowDemo(false);
+    Alert.alert('Demo Complete', 'Thanks for taking the tour! You\'re ready to start budgeting.');
+  };
+
+  const handleDemoSkip = () => {
+    setShowDemo(false);
+  };
+
   const renderMenuItem = (icon, title, onPress) => (
     <TouchableOpacity style={[styles.menuItem, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]} onPress={onPress}>
       <Text style={styles.menuIcon}>{icon}</Text>
@@ -166,6 +181,7 @@ export default function AccountScreen({ navigation }) {
       {/* Support Section */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
+        {renderMenuItem('🎯', 'App Tour', handleShowDemo)}
         {renderMenuItem('❓', 'Help Center', () => Alert.alert('Help Center', 'Need help? Contact us at support@piggybudget.com'))}
         {renderMenuItem('🔐', 'Privacy Policy', () => Alert.alert('Privacy Policy','We respect your privacy. Self Budgeting App does not sell or share your personal or financial information. We collect only the data you provide to help track your budget and improve app functionality. Your data is stored securely and used only for app purposes.Thankyou.'))}
       </View>
@@ -237,6 +253,13 @@ export default function AccountScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* Demo Walkthrough */}
+      <DemoWalkthrough 
+        visible={showDemo}
+        onComplete={handleDemoComplete}
+        onSkip={handleDemoSkip}
+      />
     </ScrollView>
   );
 }
