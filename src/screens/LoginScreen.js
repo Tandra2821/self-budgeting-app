@@ -36,24 +36,7 @@ export default function LoginScreen({ navigation }) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
 
-  // Test Firebase Connection
-  const testFirebaseConnection = async () => {
-    try {
-      Alert.alert("Testing Firebase", "Attempting to connect...");
-      
-      // Test Authentication
-      console.log("Firebase Auth initialized:", auth ? "Yes" : "No");
-      console.log("Firebase Firestore initialized:", db ? "Yes" : "No");
-      
-      Alert.alert(
-        "Firebase Test", 
-        `Auth: ${auth ? "✓ Connected" : "✗ Failed"}\nFirestore: ${db ? "✓ Connected" : "✗ Failed"}`
-      );
-    } catch (error) {
-      console.error("Firebase test error:", error);
-      Alert.alert("Firebase Test Failed", error.message);
-    }
-  };
+
 
   const handleLogin = async () => {
     if (!loginEmail.trim() || !loginPassword) {
@@ -294,14 +277,6 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </>
           )}
-          
-          {/* Firebase Test Button */}
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={testFirebaseConnection}
-          >
-            <Text style={styles.testButtonText}>🔥 Test Firestore Connection</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 

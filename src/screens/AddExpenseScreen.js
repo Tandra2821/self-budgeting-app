@@ -13,7 +13,12 @@ export default function AddExpenseScreen({ route, navigation }) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
-  const [category, setCategory] = useState("Food"); // Add category state
+  const [category, setCategory] = useState(""); // No default - user must select
+
+  const expenseCategories = [
+    "Food", "Shopping", "Bills", "Alcohol", "Rides", 
+    "Entertainment", "Medical", "Education", "Car", "Other"
+  ];
 
   useEffect(() => {
     if (isFocused) {
@@ -27,14 +32,14 @@ export default function AddExpenseScreen({ route, navigation }) {
         setTitle("");
         setAmount("");
         setPaymentMethod("Cash");
-        setCategory("Food");
+        setCategory("");
       }
     }
   }, [isFocused, existingExpense]);
 
   const saveExpense = async () => {
-    if (!title || !amount) {
-      Alert.alert("Error", "Please enter all fields");
+    if (!title || !amount || !category) {
+      Alert.alert("Error", "Please enter all fields including category");
       return;
     }
 
@@ -89,7 +94,7 @@ export default function AddExpenseScreen({ route, navigation }) {
       setTitle("");
       setAmount("");
       setPaymentMethod("Cash");
-      setCategory("Food");
+      setCategory("");
       
         Alert.alert("Success", "Expense saved successfully!");
         navigation.goBack();
@@ -106,7 +111,7 @@ export default function AddExpenseScreen({ route, navigation }) {
         setTitle("");
         setAmount("");
         setPaymentMethod("Cash");
-        setCategory("Food");
+        setCategory("");
         
         Alert.alert("Saved Locally", "Expense saved to device storage.");
         navigation.goBack();
@@ -127,7 +132,7 @@ export default function AddExpenseScreen({ route, navigation }) {
         setTitle("");
         setAmount("");
         setPaymentMethod("Cash");
-        setCategory("Food");
+        setCategory("");
         
         Alert.alert("Saved Locally", "Expense saved to device storage. Will sync to cloud when connection is restored.");
         navigation.goBack();
@@ -194,6 +199,18 @@ export default function AddExpenseScreen({ route, navigation }) {
           <Text style={[styles.backButtonText, { color: colors.primary }]}>← Back</Text>
         </TouchableOpacity>
 
+      <Text style={[styles.label, { color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 5 }]}>
+        Category <Text style={{ color: '#FF6B6B' }}>*</Text>
+      </Text>
+      {!category && (
+        <Text style={[styles.helperText, { color: '#FF6B6B', marginBottom: 10 }]}>
+          Please select a category
+        </Text>
+      )}
+      <View style={styles.categoryContainer}>
+        {expenseCategories.map(renderCategoryOption)}
+      </View>
+
       <Text style={[styles.label, { color: colors.text }]}>Title</Text>
       <TextInput
         value={title}
@@ -212,11 +229,6 @@ export default function AddExpenseScreen({ route, navigation }) {
         keyboardType="numeric"
         style={[styles.input, { backgroundColor: colors.cardBackground, borderColor: colors.border, color: colors.text }]}
       />
-
-      <Text style={[styles.label, { color: colors.text }]}>Category</Text>
-      <View style={styles.paymentContainer}>
-        {["Food", "Transport", "Shopping", "Bills"].map(renderCategoryOption)}
-      </View>
 
       <Text style={[styles.label, { color: colors.text }]}>Payment Method</Text>
       <View style={styles.paymentContainer}>{["Cash", "Credit Card", "Debit Card"].map(renderPaymentOption)}</View>
@@ -260,14 +272,34 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  optionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    marginHorizontal: 4,
-    borderRadius: 10,
-    alignItems: "center",
+  categoryContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 25,
+    gap: 8,
   },
-  optionText: { fontWeight: "500" },
+  optionButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    marginHorizontal: 2,
+    borderRadius: 8,
+    alignItems: "center",
+    minWidth: "30%",
+    maxWidth: "32%",
+    marginBottom: 8,
+    flexShrink: 1,
+  },
+  optionText: { 
+    fontWeight: "500", 
+    fontSize: 12,
+    textAlign: "center",
+    flexWrap: "wrap",
+  },
+  helperText: {
+    fontSize: 12,
+    fontStyle: "italic",
+  },
   addButton: {
     paddingVertical: 15,
     borderRadius: 10,
