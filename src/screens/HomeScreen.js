@@ -21,6 +21,9 @@ import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 
+const { width: screenWidth } = Dimensions.get("window");
+const isDesktop = screenWidth > 768;
+
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
   const [expenses, setExpenses] = useState([]);

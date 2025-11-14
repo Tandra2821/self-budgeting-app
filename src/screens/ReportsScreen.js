@@ -8,7 +8,9 @@ import { useTheme } from "../context/ThemeContext";
 import { db } from '../services/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 
-const screenWidth = Dimensions.get("window").width - 30;
+const { width: screenWidth } = Dimensions.get("window");
+const isDesktop = screenWidth > 768;
+const chartWidth = isDesktop ? Math.min(screenWidth - 100, 800) : screenWidth - 30;
 
 // Category colors for consistent reporting
 const categoryColors = {
@@ -202,6 +204,10 @@ export default function ReportsScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[
+        styles.contentContainer,
+        isDesktop && styles.desktopContent
+      ]}>
       <Text style={[styles.title, { color: colors.text }]}>📊 Budget Insights</Text>
 
       <View style={styles.filterContainer}>
@@ -216,7 +222,7 @@ export default function ReportsScreen() {
         {categoryData.length > 0 ? (
           <PieChart
             data={categoryData}
-            width={screenWidth}
+            width={chartWidth}
             height={220}
             chartConfig={chartConfig}
             accessor="amount"
@@ -237,7 +243,7 @@ export default function ReportsScreen() {
         <Text style={[styles.chartTitle, { color: colors.text }]}>Payment Methods</Text>
         <BarChart
           data={chartData}
-          width={screenWidth}
+          width={chartWidth}
           height={220}
           yAxisLabel="$"
           fromZero
@@ -270,12 +276,21 @@ export default function ReportsScreen() {
           </View>
         ))}
       </View>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15 },
+  contentContainer: {
+    width: '100%',
+  },
+  desktopContent: {
+    maxWidth: 1000,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+  },
   title: {
     fontSize: 22,
     fontWeight: "700",

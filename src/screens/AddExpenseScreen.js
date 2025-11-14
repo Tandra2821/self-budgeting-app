@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
 import { db } from '../services/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isDesktop = screenWidth > 768;
 
 export default function AddExpenseScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -190,14 +193,21 @@ export default function AddExpenseScreen({ route, navigation }) {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isDesktop && styles.desktopContainer
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Back button */}
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={[styles.backButtonText, { color: colors.primary }]}>← Back</Text>
-        </TouchableOpacity>
+        <View style={[
+          styles.formContainer,
+          isDesktop && styles.desktopForm
+        ]}>
+          {/* Back button */}
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>← Back</Text>
+          </TouchableOpacity>
 
       <Text style={[styles.label, { color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 5 }]}>
         Category <Text style={{ color: '#FF6B6B' }}>*</Text>
@@ -207,7 +217,10 @@ export default function AddExpenseScreen({ route, navigation }) {
           Please select a category
         </Text>
       )}
-      <View style={styles.categoryContainer}>
+      <View style={[
+        styles.categoryContainer,
+        isDesktop && styles.desktopCategoryContainer
+      ]}>
         {expenseCategories.map(renderCategoryOption)}
       </View>
 
@@ -241,6 +254,7 @@ export default function AddExpenseScreen({ route, navigation }) {
             {existingExpense ? "Update Expense" : "Add Expense"}
           </Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -252,8 +266,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 40, // Extra padding for keyboard
+    padding: 15,
+    paddingBottom: 40,
+  },
+  desktopContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  formContainer: {
+    width: '100%',
+  },
+  desktopForm: {
+    maxWidth: 600,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 20,
+    padding: 30,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
   },
   backButton: { 
     marginBottom: 15 
@@ -279,20 +316,24 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     gap: 8,
   },
+  desktopCategoryContainer: {
+    justifyContent: 'flex-start',
+    gap: 12,
+  },
   optionButton: {
     paddingVertical: 10,
     paddingHorizontal: 6,
     marginHorizontal: 2,
     borderRadius: 8,
     alignItems: "center",
-    minWidth: "30%",
-    maxWidth: "32%",
+    minWidth: isDesktop ? 100 : "30%",
+    maxWidth: isDesktop ? 150 : "32%",
     marginBottom: 8,
     flexShrink: 1,
   },
   optionText: { 
     fontWeight: "500", 
-    fontSize: 12,
+    fontSize: isDesktop ? 14 : 12,
     textAlign: "center",
     flexWrap: "wrap",
   },
